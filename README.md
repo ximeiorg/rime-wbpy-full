@@ -1,6 +1,79 @@
-该库是 Rime 输入法的一个 86版极点五笔的输入方案，支持多平台（Windows、macOS、Linux）。
+# 曦码 · 五笔拼音方案库（rime-wbpy-full）
 
-> 声明：本仓库 fork 自 [KyleBing/rime-wubi86-jidian](https://github.com/KyleBing/rime-wubi86-jidian)。
+一套面向 Rime 与曦码（Xime）的多方案合集：五笔 86/98、简体拼音、四种双拼，以及把它们压到
+14 / 17 / 18 键的「合并键」版本。所有方案共用同一份码表与词库，切换方案不会重复下载，输入习惯
+跨平台一致。
+
+> 本仓库 fork 自 [KyleBing/rime-wubi86-jidian](https://github.com/KyleBing/rime-wubi86-jidian)，
+> 码表沿用极点五笔 86，输入习惯接近老极点五笔；原方案说明见下文「一、前言」及之后各节。
+
+## 包含哪些方案
+
+### 五笔
+
+| schema_id | 名称 | 键数 | 说明 |
+| --- | --- | --- | --- |
+| `wubi86` | 五笔86 | 26 | 默认方案，四码唯一即上屏 |
+| `wubi86_pinyin` | 五笔拼音 | 26 | 五笔为主、拼音反查兜底 |
+| `wubi86_trad` | 简入繁出 | 26 | 打简体出繁体 |
+| `wubi86_trad_pinyin` | 拼音混输繁体 | 26 | 繁体的五笔拼音混输 |
+| `wubi86_14jian` / `_17jian` / `_18jian` | 五笔合并键 | 14 / 17 / 18 | 相邻两字母并键，见「八」 |
+| `wubi98` | 五笔98 | 26 | 98 版码表，未列入默认方案表 |
+
+### 拼音与双拼
+
+| schema_id | 名称 | 键数 | 说明 |
+| --- | --- | --- | --- |
+| `pinyin_simp` | 简体拼音 | 26 | 全拼 |
+| `pinyin_14jian` / `_17jian` / `_18jian` | 拼音合并键 | 14 / 17 / 18 | 见「七」 |
+| `double_pinyin` | 自然码双拼 | 26 | 雾凇同源键位 |
+| `double_pinyin_flypy` | 小鹤双拼 | 26 | |
+| `double_pinyin_mspy` | 微软双拼 | 26 | `ing` 在分号键；Xime 无分号键，额外支持 `ing→n` |
+| `double_pinyin_sogou` | 搜狗双拼 | 26 | 同上 |
+| `double_pinyin_{14,17,18}jian` | 自然码合并键 | 14 / 17 / 18 | 见「九」 |
+| `double_pinyin_flypy_{14,17,18}jian` | 小鹤合并键 | 14 / 17 / 18 | 见「九」 |
+| `t9_pinyin` | 拼音九键 | 9 | 需宿主内置 librime-t9，未列入默认方案表 |
+
+### 其他
+
+| schema_id | 名称 | 说明 |
+| --- | --- | --- |
+| `english` | English | 纯英文输入，未列入默认方案表 |
+| `numbers` | 大写数字 | 壹贰叁肆…，见「五、8」，未列入默认方案表 |
+| `handwriting` | 手写输入 | 依赖宿主提供手写面板，未列入默认方案表 |
+
+> 标注「未列入默认方案表」的方案不在 `default.custom.yaml` 的 `schema_list` 里，用到时把
+> `- schema: <id>` 加进该列表再重新部署即可。其余方案装好就能在方案菜单（`F4` / `` Ctrl+` ``）里选。
+
+## 快速开始
+
+1. 从 [Releases](../../releases) 下载 `rime-wbpy-full-<版本>.zip`，同目录还有 `.sha256` 可校验；
+2. 解压后，把 **`rime-wbpy-full-<版本>/` 里面的所有文件**复制到 Rime 用户目录：
+   - macOS：`~/Library/Rime`（鼠须管）
+   - Windows：`%APPDATA%\Rime`（小狼毫）
+   - Linux：`~/.config/ibus/rime`（ibus-rime）或 `~/.local/share/fcitx5/rime`（fcitx5）
+3. 重新部署（鼠须管菜单「重新部署」；小狼毫右键托盘图标 →「重新部署」）；
+4. `F4` 或 `` Ctrl+` `` 切方案。各平台细节见「四、安装」。
+
+**曦码 Xime（Android）**：设置 → 输入方案 → 导入方案包，选中这个 zip 即可；部署后在方案列表里勾选
+要用的方案。合并键与双拼方案会自动套用对应的键盘布局（绑定写在仓库自带的 `xime.custom.yaml` 里），
+不需要额外配置。
+
+## 相对上游新增了什么
+
+- **合并键方案**：把横向相邻两键并成一键（`qw`/`er`/`ty`…），键更大、误触更少。拼音、五笔、双拼
+  三系都有 14 / 17 / 18 键版本，共用词库、各自独立 prism（见「七」「八」「九」）。
+- **四套双拼**：自然码、小鹤、微软、搜狗，键位与 [rime-double-pinyin](https://github.com/rime/rime-double-pinyin) 同源。
+- **九键与英文**：`t9_pinyin`（配合 librime-t9，含日期/农历候选）、`english` 纯英文方案。
+- **曦码键盘适配**：`xime.custom.yaml` 把合并键布局绑到方案上，并补齐 App 旧版本缺失的四行布局
+  （`shift` / `delete` 与空格、回车、中英切换）。
+
+## 目录
+
+- 一、前言　二、外观　三、文件说明　四、安装　五、使用说明　六、常见自定义功能
+- 七、合并键方案（14 / 17 / 18 键）　八、五笔 14 / 17 / 18 键　九、双拼
+
+---
 
 ## 一、前言
 
@@ -38,14 +111,18 @@ __Linux: Ubuntu__
 
 ```bash
 .
+├── .github/workflows/release.yml            # CI - Release 发布时自动打包上传
 ├── README.md                               # 当前说明文档
 ├── default.yaml                            # 配置文件 - 默认配置
 ├── default.custom.yaml                     # 配置文件 - 自定义一些输入法的功能：标点，二三候选等
-├── squirrel.custom.yaml                    # 配置文件 - 鼠须管（for macOS）输入法候选词界面
+├── squirrel.custom.yaml                     # 配置文件 - 鼠须管（for macOS）输入法候选词界面
 ├── trime.custom.yaml                       # 配置文件 - 同文（for Android）输入法候选词界面
 ├── xime.custom.yaml                        # 配置文件 - Xime 合并键布局（四行 rows + 功能键）与方案绑定
+├── english.schema.yaml                     # 输入方案 - 纯英文
+├── english.dict.yaml                       # 词库文件 - 英文词库
 ├── numbers.schema.yaml                     # 输入方案 - 大写数字
-├── pinyin_simp.dict.yaml                   # 词库文件 - 简体拼音码表 - 五笔中拼音输入需要的
+├── pinyin_simp.dict.yaml                   # 词库文件 - 简体拼音主码表
+├── pinyin_simp_ext.dict.yaml               # 词库文件 - 拼音扩展词库（被主码表 import_tables 引入）
 ├── pinyin_simp.schema.yaml                 # 输入方案 - 简体拼音
 ├── pinyin_14jian.schema.yaml               # 输入方案 - 拼音14键（合并键）
 ├── pinyin_17jian.schema.yaml               # 输入方案 - 拼音17键（合并键）
@@ -76,6 +153,10 @@ __Linux: Ubuntu__
 ├── handwriting.schema.yaml                 # 输入方案 - 手写输入
 ├── t9_pinyin.schema.yaml                   # 输入方案 - 拼音九键（依赖 librime-t9 插件）
 ├── lua/
+│   ├── README.md                           # 脚本来源说明
+│   ├── convert_ar_num_to_zh.lua            # 脚本 - 阿拉伯数字转中文（被 date_translator 引用）
+│   ├── date_translator.lua                 # 脚本 - 日期 / 时间 / 星期 / 时间戳
+│   ├── english_spacing.lua                 # 脚本 - 英文方案词间自动空格
 │   └── uuid.lua                            # 脚本 - 输出 UUID
 └── macOS-双击复制文件内容.command           # 脚本 - macOS 一键复制配置到 Rime 目录
 ```
@@ -161,10 +242,14 @@ Xime 输入法（仓库地址：[https://github.com/ximeiorg/Xime](https://githu
 > 以不切换文字的形式使用只是暂时转繁，换个程序就会恢复简体了。如果你想一直使用简入繁出就选择 「简入繁出」这个方案
 
 ### 7. 系统 `时间`、`日期` 和 `星期`
-输入对应词，获取当前日期和时间
-- `date` 输出日期，格式 `2019年06月19日` `2019-06-19`
-- `time` 输出时间，格式 `10:00` `10:00:00`
-- `week` 输出星期，格式 `周四` `星期四`
+由 `lua/date_translator.lua` 提供（在 `wubi98`、`简入繁出` 两套繁体方案中启用；触发词可在方案里改）：
+- `rq` 输出日期：`2019-06-19`、`2019/06/19`、`2019年6月19日` 等
+- `sj` 输出时间：`10:00`、`10:00:00`、`上午 10:00`
+- `xq` 输出星期：`星期四`、`礼拜四`、`周四`
+- `dt` 输出 ISO 日期时间，`ts` 输出时间戳，`rqzh` / `rqen` 输出中文 / 英文日期
+
+> 五笔 86 系方案（`wubi86`、`wubi86_pinyin` 等）没有挂这个脚本；九键 `t9_pinyin` 的日期功能由
+> librime-t9 插件提供（`77`→日期、`75`→时间），见「六、5」的说明。
 
 ### 8. 支持大写数字输入：壹贰叁肆伍陆
 本库中包含一个可以输入大写数字的方案，名叫 `大写数字`，呼出菜单选择该方案即可。
@@ -217,7 +302,13 @@ Xime 输入法（仓库地址：[https://github.com/ximeiorg/Xime](https://githu
 
 ### 5. Lua 脚本扩展
 本项目将 Lua 脚本统一放在 `lua/` 目录，并在对应的 `*.schema.yaml` 中引用：
-- `uuid.lua`：输入触发词可输出 UUID，在 `wubi86.schema.yaml` 的 `engine/translators` 中以 `lua_translator@*uuid` 引用。
+- `uuid.lua`：输入 `*uuid` 输出 UUID（`lua_translator@*uuid`，多数方案引用）；
+- `date_translator.lua`：输出日期 / 时间 / 星期 / ISO 日期时间 / 时间戳 / 中英文日期，
+  触发词默认 `rq` `sj` `xq` `dt` `ts` `rqzh` `rqen`（可在方案里配置 `date_translator:` 段覆盖），
+  在 `wubi98`、`wubi86_trad`、`wubi86_trad_pinyin` 中引用；
+- `convert_ar_num_to_zh.lua`：阿拉伯数字转中文，被 `date_translator.lua` 内部 `require`；
+- `english_spacing.lua`：英文方案词间自动加空格（`lua_filter@*english_spacing`，见 `english.schema.yaml`，
+  由方案开关 `english_spacing` 控制，默认开）。
 
 > 注：九键方案（`t9_pinyin.schema.yaml`）的日期提示不再使用 Lua 脚本，改由 librime-t9 插件的 `t9_date_translator`（C++）提供，`lua/date_hint.lua` 已移除。支持 `rq/sj/xq/dt/ts/nl` 系统触发词（如 `77`→rq、`75`→sj，对应日期/时间/星期/日期时间/时间戳/农历）与「今天/今日/明天/明日/昨天/昨日」中文触发词（如 `518`（j't 简拼）或 `5468426`（jintian 全拼），输出「今天(1月15日)」形式的复合日期候选），并内置公历转农历（覆盖 1899–2100 年）；数字 preedit 的拼音显示由 `t9_filter` 完成。该方案需 librime-t9 插件支持（如 Xime 输入法内置）。
 
@@ -239,7 +330,7 @@ translator:
 
 ```
 
-### 7. 合并键方案（14 / 17 / 18 键）
+## 七、合并键方案（14 / 17 / 18 键）
 
 `pinyin_14jian` / `pinyin_17jian` / `pinyin_18jian` 是三套**合并键**拼音方案：
 把横向相邻的两个字母并成一个键（例如 `q` 和 `w` 并成 `qw`），键更少、键面更大、误触更少。
@@ -295,7 +386,7 @@ speller:
 **反查**：本仓库没有笔画词库（`stroke`），所以三套方案用 `` ` `` 前缀反查**五笔码**
 （`` `wq `` → 码为 `wq` 的字，注释给出拼音），桌面端可用；手机端没有 `` ` `` 键，用不到也不影响输入。
 
-### 8. 五笔 14 / 17 / 18 键（合并键）
+## 八、五笔 14 / 17 / 18 键（合并键）
 
 三套方案把同一套合并键机制套在五笔上，分组与同名拼音方案完全一致，共用 `wubi86` 码表；
 布局沿用 `qwerty_14/17/18`，绑定写在仓库的 `xime.custom.yaml` 里。
@@ -339,7 +430,7 @@ speller:
 2. **键面没有字根提示**。合并键横跨两个字母，`qwerty_14/17/18` 的键面只标 `qw`/`we`/`io`
    这样的组合名。需要字根提示的话，得另做一套带 `swipe_down` 字根的布局段。
 
-### 9. 双拼
+## 九、双拼
 
 四套 26 键双拼 + 六套合并键双拼，全部与 `pinyin_simp` 共用同一份词库（各用独立 prism，
 不复制码表）。键位映射表与 [rime-double-pinyin](https://github.com/rime/rime-double-pinyin) 同源

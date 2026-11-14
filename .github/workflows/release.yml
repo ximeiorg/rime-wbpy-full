@@ -1,11 +1,13 @@
 name: Release Package
 
-# 发布 Release 时，把仓库里的 Rime 配置打包成 zip 并上传到该 Release。
-# GitHub 会为上传后的 zip 资源展示 SHA-256 摘要，同时额外生成 .sha256 文件方便校验。
+# 发布 Release（或手动指定标签）时，把整份 Rime 配置打包成 zip 上传到该 Release。
+# 包内解压后是一个 <仓库名>-<tag>/ 目录，把里面的文件复制到 Rime 用户目录即可使用；
+# Xime（曦码）用户也可以直接把 zip 当「方案包」导入（导入器会自动剥掉这一层目录）。
+# GitHub 会为上传递增资源展示 SHA-256，同时额外生成 .sha256 文件方便命令行校验。
 on:
   release:
     types: [published]
-  # 支持手动重新打包（例如 Release 已存在，但资源上传失败时补传）
+  # 支持手动补传：Release 已存在但资源上传失败、或需要重新打包时用
   workflow_dispatch:
     inputs:
       tag:
@@ -42,24 +44,44 @@ jobs:
             exit 1
           fi
 
-          NAME="rime-wubi-${TAG}"
+          # 用仓库名做包名（fork/改名后不用改这里），例如 rime-wbpy-full-v1.0.0
+          NAME="$(basename "${GITHUB_REPOSITORY}")-${TAG}"
           mkdir -p dist
 
-          # 复制需要分发的文件，排除版本控制、CI 配置和本地构建产物
+          # 复制需要分发的文件：排除版本控制、CI、编辑器、本地部署与构建产物
           rsync -a \
             --exclude='.git/' \
             --exclude='.github/' \
+            --exclude='.idea/' \
             --exclude='.gitignore' \
+            --exclude='.gitattributes' \
             --exclude='.DS_Store' \
             --exclude='build/' \
             --exclude='dist/' \
+            --exclude='sync/' \
+            --exclude='user.yaml' \
+            --exclude='installation.yaml' \
+            --exclude='*.userdb/' \
+            --exclude='*.zip' \
+            --exclude='*.sha256' \
             ./ "dist/${NAME}/"
 
-          # 压缩包解压后会得到 rime-wubi-<tag>/ 目录，内容可直接复制到 Rime 用户目录
-          (cd dist && zip -rq "${NAME}.zip" "${NAME}")
+          # 硬性检查：缺了这些文件，打出来的包在 Rime 里根本起不来
+          for f in default.yaml default.custom.yaml wubi86.schema.yaml wubi86.dict.yaml pinyin_simp.schema.yaml pinyin_simp.dict.yaml; do
+            if [ ! -f "dist/${NAME}/${f}" ]; then
+              echo "::error::打包缺文件：${f}"
+              exit 1
+            fi
+          done
 
+          echo "文件数：$(find "dist/${NAME}" -type f | wc -l)"
+
+          # 压缩包解压后得到 ${NAME}/ 目录，内容可直接复制到 Rime 用户目录
+          (cd dist && zip -rq "${NAME}.zip" "${NAME}")
           (cd dist && sha256sum "${NAME}.zip" > "${NAME}.zip.sha256")
 
+          echo "包内前几项："
+          unzip -l "dist/${NAME}.zip" | head -8
           echo "打包完成："
           ls -lh dist
           cat "dist/${NAME}.zip.sha256"
