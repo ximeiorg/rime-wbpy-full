@@ -1,12 +1,17 @@
 name: Release Package
 
-# 发布 Release（或手动指定标签）时，把整份 Rime 配置打包成 zip 上传到该 Release。
+# 发布 Release、推送/强推 tag、或手动指定标签时，把整份 Rime 配置打包成 zip 上传到该 Release。
+# 注意：强推一个已发布过的 tag 只会产生 push 事件，不会重新触发 release: published，
+# 所以这里额外监听 push.tags——重新打 tag 也能自动重打包（覆盖同名 Release 资产）。
 # 包内解压后是一个 <仓库名>-<tag>/ 目录，把里面的文件复制到 Rime 用户目录即可使用；
 # Xime（曦码）用户也可以直接把 zip 当「方案包」导入（导入器会自动剥掉这一层目录）。
 # GitHub 会为上传递增资源展示 SHA-256，同时额外生成 .sha256 文件方便命令行校验。
 on:
   release:
     types: [published]
+  push:
+    tags:
+      - '*'
   # 支持手动补传：Release 已存在但资源上传失败、或需要重新打包时用
   workflow_dispatch:
     inputs:
@@ -19,20 +24,21 @@ permissions:
   contents: write
 
 concurrency:
-  group: release-package-${{ github.event.release.tag_name || github.event.inputs.tag }}
+  group: release-package-${{ github.event.release.tag_name || github.event.inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   package:
     runs-on: ubuntu-latest
     env:
-      TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+      # release → tag_name；手动 → inputs.tag；push tag → ref_name
+      TAG: ${{ github.event.release.tag_name || github.event.inputs.tag || github.ref_name }}
 
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+          ref: ${{ github.event.release.tag_name || github.event.inputs.tag || github.ref_name }}
           fetch-depth: 0
 
       - name: 打包配置并生成 SHA-256
@@ -89,7 +95,9 @@ jobs:
       - name: 上传到 Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+          tag_name: ${{ github.event.release.tag_name || github.event.inputs.tag || github.ref_name }}
+          # 强推 tag 重打包时，同名 zip / sha256 需要覆盖而不是报 422
+          overwrite_files: true
           files: |
             dist/*.zip
             dist/*.sha256
