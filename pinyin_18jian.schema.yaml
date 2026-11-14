@@ -1,0 +1,117 @@
+# Rime schema
+# encoding: utf-8
+#
+# 拼音 18 键（与 pinyin_simp 共享词典，独立 prism）
+#
+# 合并键布局（对应 Xime 的 keyboard.qwerty_18）：
+#   q / we / rt / y / u / io / p
+#   a / sd / fg / h / jk / l
+#   z / xc / v / bn / m
+# 前端每个合并键只上送组内第一个字母（代表字母），输入侧可用字母共 18 个：
+# q w r y u i p a s f h j l z x v b m。
+#
+# 消歧靠拼写运算把词库拼音码折成「按键序列码」：
+#   derive/(.*)/\U$1/            先复制一份大写码（小写原码保留）
+#   xlit/大写字母/代表字母/        再把大写副本逐位折成代表字母
+#
+# 反查用 ` 前缀打五笔码（本仓库没有笔画词库，故以 wubi86 作反查字典）。
+
+schema:
+  schema_id: pinyin_18jian
+  name: 拼音18键
+  version: "1.0"
+  author:
+    - 曦码（Xime）
+  description: |
+    拼音 18 键：字母两两合并（we/rt/io、sd/fg/jk、xc/bn），
+    四套合并键里按键最多、歧义最少，接近全键盘。
+  dependencies:
+    - pinyin_simp
+
+switches:
+  - name: ascii_mode
+    reset: 0
+    states: [ 中文, 西文 ]
+  - name: full_shape
+    states: [ 半角, 全角 ]
+  - name: ascii_punct
+    reset: 0
+    states: [ 。，, ．， ]
+
+engine:
+  processors:
+    - ascii_composer
+    - recognizer
+    - key_binder
+    - speller
+    - punctuator
+    - selector
+    - navigator
+    - express_editor
+  segmentors:
+    - ascii_segmentor
+    - matcher
+    - abc_segmentor
+    - punct_segmentor
+    - fallback_segmentor
+  translators:
+    - punct_translator
+    - script_translator
+    - reverse_lookup_translator
+    - lua_translator@*uuid
+
+speller:
+  alphabet: zyxwvutsrqponmlkjihgfedcba
+  delimiter: " '"
+  algebra:
+    # ── 与 pinyin_simp 一致的简拼 / 容错规则 ──
+    - abbrev/^([a-z]).+$/$1/
+    - abbrev/^([zcs]h).+$/$1/
+    - derive/^([nl])ue$/$1ve/
+    - derive/^([jqxy])u/$1v/
+    - derive/un$/uen/
+    - derive/ui$/uei/
+    - derive/iu$/iou/
+    - derive/([aeiou])ng$/$1gn/
+    - derive/([dtngkhrzcs])o(u|ng)$/$1o/
+    - derive/ong$/on/
+    - derive/ao$/oa/
+    - derive/([iu])a(o|ng?)$/a$1$2/
+    # ── 合并键：拼音码 → 按键序列码 ──
+    # 目标串按 QWERTY 顺序逐位给出 26 个字母的代表字母，与 qwerty_18 的分组一一对应：
+    #   Q→q WE→w RT→r Y→y U→u IO→i P→p / A→a SD→s FG→f H→h JK→j L→l / Z→z XC→x V→v BN→b M→m
+    - derive/(.*)/\U$1/
+    - xlit/QWERTYUIOPASDFGHJKLZXCVBNM/qwwrryuiipassffhjjlzxxvbbm/
+
+translator:
+  dictionary: pinyin_simp
+  prism: pinyin_18jian
+  packs:
+    - user_simp
+  preedit_format:
+    - xform/([nl])v/$1ü/
+    - xform/([nl])ue/$1üe/
+    - xform/([jqxy])v/$1u/
+
+reverse_lookup:
+  dictionary: wubi86
+  enable_completion: true
+  prefix: "`"
+  suffix: "'"
+  tips: 〔五笔〕
+
+menu:
+  page_size: 5
+
+punctuator:
+  import_preset: default
+  __include: symbols:/punctuator
+
+key_binder:
+  import_preset: default
+
+recognizer:
+  import_preset: default
+  patterns:
+    punct: "^/([0-9]+[a-z]*|[a-z]+)$"
+    reverse_lookup: "^`[a-z]*'?$"

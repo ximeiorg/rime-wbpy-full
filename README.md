@@ -43,13 +43,30 @@ __Linux: Ubuntu__
 ├── default.custom.yaml                     # 配置文件 - 自定义一些输入法的功能：标点，二三候选等
 ├── squirrel.custom.yaml                    # 配置文件 - 鼠须管（for macOS）输入法候选词界面
 ├── trime.custom.yaml                       # 配置文件 - 同文（for Android）输入法候选词界面
+├── xime.custom.yaml                        # 配置文件 - Xime 合并键布局（四行 rows + 功能键）与方案绑定
 ├── numbers.schema.yaml                     # 输入方案 - 大写数字
 ├── pinyin_simp.dict.yaml                   # 词库文件 - 简体拼音码表 - 五笔中拼音输入需要的
 ├── pinyin_simp.schema.yaml                 # 输入方案 - 简体拼音
+├── pinyin_14jian.schema.yaml               # 输入方案 - 拼音14键（合并键）
+├── pinyin_17jian.schema.yaml               # 输入方案 - 拼音17键（合并键）
+├── pinyin_18jian.schema.yaml               # 输入方案 - 拼音18键（合并键）
+├── double_pinyin.schema.yaml               # 输入方案 - 自然码双拼（26键）
+├── double_pinyin_flypy.schema.yaml         # 输入方案 - 小鹤双拼（26键）
+├── double_pinyin_mspy.schema.yaml          # 输入方案 - 微软双拼（26键）
+├── double_pinyin_sogou.schema.yaml         # 输入方案 - 搜狗双拼（26键）
+├── double_pinyin_14jian.schema.yaml        # 输入方案 - 自然码双拼14键（合并键）
+├── double_pinyin_17jian.schema.yaml        # 输入方案 - 自然码双拼17键（合并键）
+├── double_pinyin_18jian.schema.yaml        # 输入方案 - 自然码双拼18键（合并键）
+├── double_pinyin_flypy_14jian.schema.yaml  # 输入方案 - 小鹤双拼14键（合并键）
+├── double_pinyin_flypy_17jian.schema.yaml  # 输入方案 - 小鹤双拼17键（合并键）
+├── double_pinyin_flypy_18jian.schema.yaml  # 输入方案 - 小鹤双拼18键（合并键）
 ├── symbols.yaml                            # 配置文件 - 特殊符号
 ├── wubi86.schema.yaml                      # 输入方案 - 五笔86
 ├── wubi86.dict.yaml                        # 词库文件 - 五笔86主码表
 ├── wubi86_pinyin.schema.yaml               # 输入方案 - 五笔拼音混输
+├── wubi86_14jian.schema.yaml               # 输入方案 - 五笔86 14键（合并键）
+├── wubi86_17jian.schema.yaml               # 输入方案 - 五笔86 17键（合并键）
+├── wubi86_18jian.schema.yaml               # 输入方案 - 五笔86 18键（合并键）
 ├── wubi86_trad.schema.yaml                 # 输入方案 - 五笔简入繁出
 ├── wubi86_trad_pinyin.schema.yaml          # 输入方案 - 拼音混输繁体
 ├── wubi86_user.dict.yaml                   # 词库文件 - 用户私人词库
@@ -221,5 +238,163 @@ translator:
   enable_encoder: true
 
 ```
+
+### 7. 合并键方案（14 / 17 / 18 键）
+
+`pinyin_14jian` / `pinyin_17jian` / `pinyin_18jian` 是三套**合并键**拼音方案：
+把横向相邻的两个字母并成一个键（例如 `q` 和 `w` 并成 `qw`），键更少、键面更大、误触更少。
+三套方案与 `pinyin_simp` 共用同一份词典（`pinyin_simp.dict.yaml`），不额外需要词库。
+
+| 方案 | 分组 | 键数 |
+| --- | --- | --- |
+| `pinyin_14jian` | `qw/er/ty/ui/op`、`as/df/gh/jk/l`、`zx/cv/bn/m` | 14 |
+| `pinyin_17jian` | `q/we/rt/yu/i/op`、`a/sd/fg/h/jk/l`、`z/xc/v/bn/m` | 17 |
+| `pinyin_18jian` | `q/we/rt/y/u/io/p`、`a/sd/fg/h/jk/l`、`z/xc/v/bn/m` | 18 |
+
+**怎么做到「少键还能打出正确候选」**：前端点击合并键时只上送组内**第一个字母**（代表字母），
+所以输入侧只有那几个字母。方案侧再用两行拼写运算，把词库里的拼音码折成「按键序列码」：
+
+```yaml
+speller:
+  algebra:
+    # ... 与 pinyin_simp 相同的简拼 / 容错规则 ...
+    - derive/(.*)/\U$1/                                        # ① 复制一份大写码
+    - xlit/QWERTYUIOPASDFGHJKLZXCVBNM/qqeettuuooaaddggjjlzzccbbm/   # ② 逐位折成代表字母（14 键）
+```
+
+① `derive` 造出的大写副本只用于折叠，原始小写码保留；② `xlit` 只映射大写字母，所以不会动到原码。
+以 14 键为例：`ni` → `NI` → `BI` → `bu`，而 `bi` 也折成 `bu`，两个音节在按键序列上重合，
+最后由 `pinyin_simp` 的词频在候选层分出先后。这正是九键（`t9_pinyin`）把字母映射成数字的同一套思路。
+
+**与前端配合**：本仓库自带 `xime.custom.yaml`，把合并键布局绑到方案上——
+`qwerty_14 → pinyin_14jian + wubi86_14jian + 双拼 14 键`、
+`qwerty_17 → pinyin_17jian + wubi86_17jian + 双拼 17 键`、
+`qwerty_18 → pinyin_18jian + wubi86_18jian + 双拼 18 键`。
+
+**四行布局在这里写全，不依赖 App 内置那份**。Xime 2.5.0～3.5.0 内置的 `qwerty_14/17/18` 只有
+三行字母键：没有 `space` / `enter` / `mode_change`，`shift` 与 `delete` 只靠「整行一个功能键都没有
+就自动补」的兜底塞进**第二行两端**——等于没有空格键，键盘也没法正常用。
+（App 3.5.1 起内置布局已补全；本文件仍写全，是为了让旧版本装上方案包也能用。）
+所以 `xime.custom.yaml` 里把 `layout.rows` 与五个功能键的手势都补全了：
+
+| 行 | 14 键 | 17 / 18 键 |
+| --- | --- | --- |
+| 1 | `qw er ty ui op` | `q we rt yu i op` / `q we rt y u io p` |
+| 2 | `as df gh jk l` | `a sd fg h jk l` |
+| 3 | `shift zx cv bn m delete` | `shift z xc v bn m delete` |
+| 4 | `mode_change comma space earth enter` | 同左 |
+
+`keys` 是**按键 id 逐个覆盖**的（不是整段替换），所以字母键与合并键仍沿用内置定义，
+这里只补 `shift` / `delete` / `mode_change` / `space` / `enter`。功能键与字母键同宽（`width: 1`），
+因为行 3 的键数接近行 1，同宽时列对齐最好看。
+
+改分组时**必须同时改三处**：方案里的 `xlit` 目标串、App 内置 `xime.yaml` 的 `layout.rows`、
+以及本仓库 `xime.custom.yaml` 的 `layout.rows`（`xlit` 按 QWERTY 顺序逐位给出 26 个字母的代表
+字母，`rows` 的子数组决定哪些字母并在一起，三边一个字都不能错）。
+
+**反查**：本仓库没有笔画词库（`stroke`），所以三套方案用 `` ` `` 前缀反查**五笔码**
+（`` `wq `` → 码为 `wq` 的字，注释给出拼音），桌面端可用；手机端没有 `` ` `` 键，用不到也不影响输入。
+
+### 8. 五笔 14 / 17 / 18 键（合并键）
+
+三套方案把同一套合并键机制套在五笔上，分组与同名拼音方案完全一致，共用 `wubi86` 码表；
+布局沿用 `qwerty_14/17/18`，绑定写在仓库的 `xime.custom.yaml` 里。
+
+| 方案 | 分组 | 键数 |
+| --- | --- | --- |
+| `wubi86_14jian` | `qw/er/ty/ui/op`、`as/df/gh/jk/l`、`zx/cv/bn/m` | 14 |
+| `wubi86_17jian` | `q/we/rt/yu/i/op`、`a/sd/fg/h/jk/l`、`z/xc/v/bn/m` | 17 |
+| `wubi86_18jian` | `q/we/rt/y/u/io/p`、`a/sd/fg/h/jk/l`、`z/xc/v/bn/m` | 18 |
+
+拼音合并后还有“音节”这层冗余兜底，五笔没有——码就是任意字母序列，一合并真撞。
+按 `wubi86` + `wubi86_extra` 共 9.1 万条，实测/统计如下：
+
+| 指标 | 26 键（`wubi86`） | 14 键 | 17 键 | 18 键 |
+| --- | --- | --- | --- | --- |
+| 25 个一级简码的首选变化 | — | **1 个**（`u` 产→不） | **4 个**（`s` 要→在、`w` 人→有、`x` 经→以、`y` 主→产） | **3 个**（`s`、`w`、`x`） |
+| 唯一码占比（四码自动上屏） | 87.5% | 32.7% | 45.0% | 50.9% |
+| 原码首选仍排第一（按码数，静态估算） | 100% | 35.5% | 47.6% | 54.8% |
+| 前 3 位内命中（同上） | 100% | 69.9% | 81.2% | 86.7% |
+
+> 一级简码那行是 `rime_console` 逐键实测；后三行是拿码表按码数统计的估算值（词频并列时
+> 实际顺序由词典条目顺序决定，会有出入）。
+
+有个反直觉的地方：**14 键唯一码最低，一级简码却几乎不乱**。因为一级简码本身就是最高频的字，
+合并后撞在一起时通常还是它权重最高；掉档主要发生在三码、四码的常用字与词组上：
+
+| 字/词 | 原码 | 26 键 | 14 键 | 17 / 18 键 |
+| --- | --- | --- | --- | --- |
+| 你好 | `wqvb` | 首选 | `qqcb` → 首选变「铯」 | `wqvb` → 首选（与原码相同） |
+| 中国 | `khlg` | 首选 | `jglg` → 第 2（「最惠国」在前） | `jhlf` → 第 2（「跳转」在前） |
+| 我 | `trnt` | 首选 | `tebt` → 第 2（「秀发」在前） | `rrbr` → 第 3（「白发」「播发」在前） |
+| 好 | `vbg` | 首选 | `cbg` → 掉出前三（生僻字占位） | `vbf` → 首选 |
+
+结论：**17 键是五笔这边的甜点**（少 8 个键，一级简码只错 4 个、前 3 位仍有八成），
+14 键要能接受更多翻页，适合只想在超大键面下慢慢打的人。
+
+两处刻意的取舍（三套一致）：
+
+1. **放开单键的用户词典**。`wubi86.schema.yaml` 里有 `disable_user_dict_for_patterns: ^[a-z]$`，
+   一级简码完全不参与学习；这三套方案去掉这条，被顶掉的简码打几次就能学回来。
+2. **键面没有字根提示**。合并键横跨两个字母，`qwerty_14/17/18` 的键面只标 `qw`/`we`/`io`
+   这样的组合名。需要字根提示的话，得另做一套带 `swipe_down` 字根的布局段。
+
+### 9. 双拼
+
+四套 26 键双拼 + 六套合并键双拼，全部与 `pinyin_simp` 共用同一份词库（各用独立 prism，
+不复制码表）。键位映射表与 [rime-double-pinyin](https://github.com/rime/rime-double-pinyin) 同源
+（雾凇拼音用的也是这份），本仓库只替换了词典和引擎外壳。
+
+| 方案 | schema_id | 键数 |
+| --- | --- | --- |
+| 自然码双拼 | `double_pinyin` | 26 |
+| 小鹤双拼 | `double_pinyin_flypy` | 26 |
+| 微软双拼 | `double_pinyin_mspy` | 26 |
+| 搜狗双拼 | `double_pinyin_sogou` | 26 |
+| 自然码 14 / 17 / 18 键 | `double_pinyin_14jian` 等 | 14 / 17 / 18 |
+| 小鹤 14 / 17 / 18 键 | `double_pinyin_flypy_14jian` 等 | 14 / 17 / 18 |
+
+**分号问题（微软 / 搜狗）**：这两种键位里 `ing` 落在分号 `;` 上。Xime 的 26 键布局没有分号键，
+而且 `default.custom.yaml` 里 `;` 在候选状态下是「选第 2 个候选」的快捷键，所以这两个方案额外
+派生了一条 `derive/;/n/`，键盘上打 `n` 也能输入 -ing 音节。代价是 `xn` 会先出「新」再出「行」；
+桌面端打 `;` 仍然是标准的 `ing`。
+
+**合并键双拼的代价**（`pinyin_simp.dict.yaml` 10.07 万条按词频分组估算，词频并列时实际顺序可能略有出入）：
+
+| 方案 | 首选仍排第一 | 前 3 位内命中 |
+| --- | --- | --- |
+| 自然码 26 键 | 100% | 100% |
+| 自然码 18 键 | 82.1% | 95.8% |
+| 自然码 17 键 | 78.3% | 94.1% |
+| 自然码 14 键 | 67.9% | 86.9% |
+| 小鹤 26 键 | 100% | 100% |
+| 小鹤 18 键 | 82.4% | 96.0% |
+| 小鹤 17 键 | 79.7% | 95.1% |
+| 小鹤 14 键 | 67.1% | 86.8% |
+
+本机 `rime_deployer` + `rime_console` 实测：
+
+```
+自然码 26   nihk → 你好        ui → 是
+小鹤   26   nihc → 你好
+微软   26   nihk → 你好        x; → 行        xn → 新、行
+自然码 18   bihj → 你好
+自然码 17   bihj → 你好
+自然码 14   bugj → 不好、你好、不敢     ← 14 键下「不好」与「你好」同码
+小鹤   18   bihx → 你好
+小鹤   17   bihx → 你好
+小鹤   14   bugc → 不会、不好、你好
+```
+
+为什么要谨慎用 14 键：它把 `i` 并进 `u`、`d` 并进 `s`，双拼里 `bi`(比) 与 `bu`(不) 都成了 `bu`，
+`di`(地) 与 `duo`(多) 都成了 `si`。想少键又少翻页，18 键是甜点（键少 8 个，首选只掉 18 个百分点）。
+
+两点实现说明：
+
+1. **合并键双拼没有 `preedit_format`**。输入框显示的是折叠后的按键码（与键面标的组合名一致），
+   不再还原成全拼——字母已经不一一对应，强行还原只会显示出错的拼音。
+2. **别把双拼挂进纠错 / 模糊拼音**。`xime.yaml` 的 `correction.schemas` 与 `fuzzy_pinyin.schemas`
+   只认「按键字母 = 编码」的全拼方案，双拼的编码经过拼写运算变换，加进去只会污染编码
+   （配置文件的注释里也写了这条）。
 
 > **始于** 2019年02月28日

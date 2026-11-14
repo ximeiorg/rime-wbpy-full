@@ -10,9 +10,27 @@ patch:
   schema_list:
     - schema: wubi86_pinyin
     - schema: wubi86
+    - schema: wubi86_14jian
+    - schema: wubi86_17jian
+    - schema: wubi86_18jian
     - schema: wubi86_trad
     - schema: wubi86_trad_pinyin
     - schema: pinyin_simp
+    - schema: pinyin_14jian
+    - schema: pinyin_17jian
+    - schema: pinyin_18jian
+    # ── 双拼（26 键）──
+    - schema: double_pinyin
+    - schema: double_pinyin_flypy
+    - schema: double_pinyin_mspy
+    - schema: double_pinyin_sogou
+    # ── 双拼（合并键 14 / 17 / 18）──
+    - schema: double_pinyin_14jian
+    - schema: double_pinyin_17jian
+    - schema: double_pinyin_18jian
+    - schema: double_pinyin_flypy_14jian
+    - schema: double_pinyin_flypy_17jian
+    - schema: double_pinyin_flypy_18jian
 
   # Menu
   menu:

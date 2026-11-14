@@ -1,0 +1,106 @@
+# Rime schema settings
+# encoding: utf-8
+#
+# 五笔 86 · 18 键（合并键；与 wubi86 共用码表，独立 prism）
+#
+# 合并键布局（对应 Xime 的 keyboard.qwerty_18，与拼音 18 键共用同一套分组）：
+#   q / we / rt / y / u / io / p
+#   a / sd / fg / h / jk / l
+#   z / xc / v / bn / m
+# 前端每个合并键只上送组内第一个字母（代表字母），输入侧可用字母共 18 个：
+# q w r y u i p a s f h j l z x v b m。
+#
+# 消歧同样靠拼写运算把码表里的五笔码折成「按键序列码」：
+#   derive/(.*)/\U$1/            先复制一份大写码（小写原码保留）
+#   xlit/大写字母/代表字母/        再把大写副本逐位折成代表字母
+#
+# 代价（wubi86 + extra 共 9.1 万条；一级简码用 rime_console 实测，其余按码表静态统计，
+# 完整对照见 README 第 8 节）：
+#   · 一级简码首选变化：14 键 1/25（u 产→不）、17 键 4/25（s 要→在、w 人→有、x 经→以、
+#     y 主→产）、18 键 3/25（s/w/x）；
+#   · 唯一码（四码唯一即上屏）：87.5% → 14 键 32.7% / 17 键 45.0% / 18 键 50.9%；
+#   · 原码首选仍第一：35.5% / 47.6% / 54.8%（按码数），前 3 位内 69.9% / 81.2% / 86.7%。
+# 所以这里**不再屏蔽单键的用户词典**（wubi86 原方案有 `^[a-z]$` 那条），
+# 打几次就能把被顶掉的一级简码学回来。
+
+schema:
+  schema_id: wubi86_18jian
+  name: "五笔18键"
+  version: "1.0"
+  author:
+    - 创始人 王永民先生
+    - 曦码（Xime）
+  description: |
+    五笔 86 的 18 键合并布局（we/rt/io、sd/fg/jk、xc/bn），键更大、误触更少；
+    合并带来的重码由码表词频消歧，单键首选可被用户词典纠正。
+  dependencies:
+    - wubi86
+
+switches:
+  - name: ascii_mode
+    reset: 0
+    states: [ 中文, 英文 ]
+  - name: full_shape
+    states: [ 半角, 全角 ]
+
+engine:
+  processors:
+    - ascii_composer
+    - recognizer
+    - key_binder
+    - speller
+    - punctuator
+    - selector
+    - navigator
+    - express_editor
+  segmentors:
+    - ascii_segmentor
+    - matcher
+    - abc_segmentor
+    - punct_segmentor
+    - fallback_segmentor
+  translators:
+    - punct_translator
+    - table_translator
+    - lua_translator@*uuid
+  filters:
+    - uniquifier
+
+speller:
+  alphabet: "abcdefghijklmnopqrstuvwxyz"
+  delimiter: " '"
+  max_code_length: 4
+  auto_select: true
+  auto_select_unique_candidate: true
+  algebra:
+    # ── 合并键：五笔码 → 按键序列码 ──
+    # 目标串按 QWERTY 顺序逐位给出 26 个字母的代表字母，与 qwerty_18 的分组一一对应：
+    #   Q→q WE→w RT→r Y→y U→u IO→i P→p / A→a SD→s FG→f H→h JK→j L→l / Z→z XC→x V→v BN→b M→m
+    - derive/(.*)/\U$1/
+    - xlit/QWERTYUIOPASDFGHJKLZXCVBNM/qwwrryuiipassffhjjlzxxvbbm/
+
+translator:
+  dictionary: wubi86
+  prism: wubi86_18jian
+  enable_charset_filter: true
+  enable_completion: true
+  enable_sentence: false
+  enable_user_dict: true
+  enable_encoder: true
+  encode_commit_history: true
+
+punctuator:
+  import_preset: default
+  __include: symbols:/punctuator
+
+key_binder:
+  import_preset: default
+  bindings:
+    - { when: has_menu, accept: space, send: 1 }
+    - { when: composing, accept: space, send: 1 }
+
+recognizer:
+  import_preset: default
+
+menu:
+  page_size: 5

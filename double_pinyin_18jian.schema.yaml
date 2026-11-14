@@ -1,0 +1,116 @@
+# Rime schema
+# encoding: utf-8
+#
+# 自然码双拼 18 键（与 pinyin_simp 共享词典，独立 prism）
+#
+# 自然码双拼 18 键，合并键布局（对应 Xime 的 keyboard.qwerty_18）：
+#   q  we  rt  y  u  io  p  a  sd  fg  h  jk  l  z  xc  v  bn  m
+# 前端每个合并键只上送组内第一个字母（代表字母），可用字母共 18 个：
+#   q w r y u i p a s f h j l z x v b m
+#
+# 拼写运算分两步：先按自然码把全拼折成两键双拼码，再把双拼码逐位折成代表字母——
+#   derive/(.*)/\U$1/       复制一份大写码（原小写双拼码保留，全键盘仍可直接用）
+#   xlit/大写字母/代表字母/   把大写副本折成按键序列码，靠词频消歧
+#
+# 合并后部分音节同码（如自然码 18 键下 di/duo/si/suo 落在同一个码），
+# 首选会让给更高频的词；输入框也不再显示还原后的全拼（preedit_format 已省略）。
+#
+schema:
+  schema_id: double_pinyin_18jian
+  name: 自然码18键
+  version: "1.0"
+  author:
+    - 曦码（Xime）
+  description: |
+    自然码 18 键：双拼两键再按合并键折叠，键位更少；
+    键数与 18 键全拼布局一致，共用同一套键盘。
+  dependencies:
+    - pinyin_simp
+
+switches:
+  - name: ascii_mode
+    reset: 0
+    states: [ 中文, 西文 ]
+  - name: full_shape
+    states: [ 半角, 全角 ]
+  - name: ascii_punct
+    reset: 0
+    states: [ 。，, ．， ]
+
+engine:
+  processors:
+    - ascii_composer
+    - recognizer
+    - key_binder
+    - speller
+    - punctuator
+    - selector
+    - navigator
+    - express_editor
+  segmentors:
+    - ascii_segmentor
+    - matcher
+    - abc_segmentor
+    - punct_segmentor
+    - fallback_segmentor
+  translators:
+    - punct_translator
+    - script_translator
+    - lua_translator@*uuid
+
+speller:
+  alphabet: zyxwvutsrqponmlkjihgfedcba
+  initials: qwryuipasfhjlzxvbm
+  delimiter: " '"
+  algebra:
+    - erase/^xx$/
+    - derive/^([jqxy])u$/$1v/
+    - derive/^([aoe])([ioun])$/$1$1$2/
+    - xform/^([aoe])(ng)?$/$1$1$2/
+    - xform/iu$/Ⓠ/
+    - xform/[iu]a$/Ⓦ/
+    - xform/[uv]an$/Ⓡ/
+    - xform/[uv]e$/Ⓣ/
+    - xform/ing$|uai$/Ⓨ/
+    - xform/^sh/Ⓤ/
+    - xform/^ch/Ⓘ/
+    - xform/^zh/Ⓥ/
+    - xform/uo$/Ⓞ/
+    - xform/[uv]n$/Ⓟ/
+    - xform/(.)i?ong$/$1Ⓢ/
+    - xform/[iu]ang$/Ⓓ/
+    - xform/(.)en$/$1Ⓕ/
+    - xform/(.)eng$/$1Ⓖ/
+    - xform/(.)ang$/$1Ⓗ/
+    - xform/ian$/Ⓜ/
+    - xform/(.)an$/$1Ⓙ/
+    - xform/iao$/Ⓒ/
+    - xform/(.)ao$/$1Ⓚ/
+    - xform/(.)ai$/$1Ⓛ/
+    - xform/(.)ei$/$1Ⓩ/
+    - xform/ie$/Ⓧ/
+    - xform/ui$/Ⓥ/
+    - xform/(.)ou$/$1Ⓑ/
+    - xform/in$/Ⓝ/
+    - xlit/ⓆⓌⓇⓉⓎⓊⒾⓄⓅⓈⒹⒻⒼⒽⓂⒿⒸⓀⓁⓏⓍⓋⒷⓃ/qwrtyuiopsdfghmjcklzxvbn/
+    - derive/(.*)/\U$1/
+    - xlit/QWERTYUIOPASDFGHJKLZXCVBNM/qwwrryuiipassffhjjlzxxvbbm/
+
+translator:
+  dictionary: pinyin_simp
+  prism: double_pinyin_18jian
+
+menu:
+  page_size: 5
+
+punctuator:
+  import_preset: default
+  __include: symbols:/punctuator
+
+key_binder:
+  import_preset: default
+
+recognizer:
+  import_preset: default
+  patterns:
+    punct: "^/([0-9]+[a-z]*|[a-z]+)$"
