@@ -5,17 +5,22 @@
 #
 # 这个文件做三件事：
 #   1. 把合并键布局绑到本仓库的方案上（schemas）；
-#   2. 写全三套合并键键盘的四行布局。App 2.5.0～3.5.0 内置的 qwerty_14/17/18 只有三行
+#   2. 写全四套合并键键盘的布局。App 2.5.0～3.5.0 内置的 qwerty_14/17/18 只有三行
 #      字母键：没有空格 / 回车 / 中英切换，shift 与 delete 只靠「整行一个功能键都没有就
 #      自动补」的兜底，位置落在第二行两端，不是正常键盘的样子。App 3.5.1 起内置已修好，
 #      这里仍写全是为了旧版本可用——改分组时两边要同步，别忘了；
 #   3. 补上 shift / delete / mode_change / space / enter 这五个功能键的手势定义
 #      （合并键段不继承 qwerty 段的手势，内置未定义时这些键不渲染）。
+# 另有第四段 qwerty_14_wubi（五笔 14 键，z 独立）：内置 xime.yaml 没有这个段，
+# 字母键、功能键、comma / earth 都要在这里写全，没有回退来源。
 #
 # 行结构（与 26 键同形：三行字母 + 一行功能键）：
-#   qwerty_14 → qw er ty ui op / as df gh jk l / shift zx cv bn m delete / 功能行
-#   qwerty_17 → q we rt yu i op / a sd fg h jk l / shift z xc v bn m delete / 功能行
-#   qwerty_18 → q we rt y u io p / a sd fg h jk l / shift z xc v bn m delete / 功能行
+#   qwerty_14     → qw er ty ui op / as df gh jk l / shift zx cv bn m delete / 功能行
+#   qwerty_14_wubi → qw er ty ui op / as df gh jk l / shift z xc vb nm delete / 功能行
+#                    （五笔专属 14 键：z 不并键——五笔 86 的码只用 a–y，z 空闲，
+#                     留作独立的学习键；拼音 14 键的 z 是正常声母，仍用 qwerty_14）
+#   qwerty_17     → q we rt yu i op / a sd fg h jk l / shift z xc v bn m delete / 功能行
+#   qwerty_18     → q we rt y u io p / a sd fg h jk l / shift z xc v bn m delete / 功能行
 
 metadata:
   app_name: Xime
@@ -25,9 +30,9 @@ metadata:
   modified_time: "2026-11-14"
 
 keyboard:
-  # ── 拼音 / 五笔 / 双拼 14 键：qw er ty ui op、as df gh jk l、zx cv bn m ──
+  # ── 拼音 / 双拼 14 键：qw er ty ui op、as df gh jk l、zx cv bn m ──
   qwerty_14:
-    schemas: [pinyin_14jian, wubi86_14jian, double_pinyin_14jian, double_pinyin_flypy_14jian]
+    schemas: [pinyin_14jian, double_pinyin_14jian, double_pinyin_flypy_14jian]
     button_layout: standard
     layout:
       # 合并键布局按各行键数铺满（行短于首行也不居中）
@@ -66,6 +71,73 @@ keyboard:
       enter:
         width: 1.2
         tap: { action: enter, bubble: false }
+
+  # ── 五笔 14 键（z 独立）：qw er ty ui op、as df gh jk l、z xc vb nm ──
+  # 五笔专属段，内置 xime.yaml 没有，这里必须写全：字母键 + 功能键一样都不能少
+  #（其他段的字母键靠内置回退，这个段没有回退来源）。
+  qwerty_14_wubi:
+    schemas: [wubi86_14jian]
+    button_layout: standard
+    layout:
+      row_align: stretch
+      rows:
+        - [[q, w], [e, r], [t, y], [u, i], [o, p]]
+        - [[a, s], [d, f], [g, h], [j, k], l]
+        - [shift, z, [x, c], [v, b], [n, m], delete]
+        - [mode_change, comma, space, earth, enter]
+    keys:
+      # 字母键：swipe_up 数字按行序排布（上排 1-5、中排 6-0），长按出组内字母的大写
+      qw: { tap: { label: "qw", value: "q" }, swipe_up: "1", long_press: { display: "bubble", values: [{ action: commit, value: "q" }, { action: commit, value: "w" }, { action: commit, value: "Q" }, { action: commit, value: "W" }] } }
+      er: { tap: { label: "er", value: "e" }, swipe_up: "2", long_press: { display: "bubble", values: [{ action: commit, value: "e" }, { action: commit, value: "r" }, { action: commit, value: "E" }, { action: commit, value: "R" }] } }
+      ty: { tap: { label: "ty", value: "t" }, swipe_up: "3", long_press: { display: "bubble", values: [{ action: commit, value: "t" }, { action: commit, value: "y" }, { action: commit, value: "T" }, { action: commit, value: "Y" }] } }
+      ui: { tap: { label: "ui", value: "u" }, swipe_up: "4", long_press: { display: "bubble", values: [{ action: commit, value: "u" }, { action: commit, value: "i" }, { action: commit, value: "U" }, { action: commit, value: "I" }] } }
+      op: { tap: { label: "op", value: "o" }, swipe_up: "5", long_press: { display: "bubble", values: [{ action: commit, value: "o" }, { action: commit, value: "p" }, { action: commit, value: "O" }, { action: commit, value: "P" }] } }
+      as: { tap: { label: "as", value: "a" }, swipe_up: "6", long_press: { display: "bubble", values: [{ action: commit, value: "a" }, { action: commit, value: "s" }, { action: commit, value: "A" }, { action: commit, value: "S" }] } }
+      df: { tap: { label: "df", value: "d" }, swipe_up: "7", long_press: { display: "bubble", values: [{ action: commit, value: "d" }, { action: commit, value: "f" }, { action: commit, value: "D" }, { action: commit, value: "F" }] } }
+      gh: { tap: { label: "gh", value: "g" }, swipe_up: "8", long_press: { display: "bubble", values: [{ action: commit, value: "g" }, { action: commit, value: "h" }, { action: commit, value: "G" }, { action: commit, value: "H" }] } }
+      jk: { tap: { label: "jk", value: "j" }, swipe_up: "9", long_press: { display: "bubble", values: [{ action: commit, value: "j" }, { action: commit, value: "k" }, { action: commit, value: "J" }, { action: commit, value: "K" }] } }
+      l:  { tap: { label: "l", value: "l" }, swipe_up: "0", long_press: { display: "bubble", values: [{ action: commit, value: "l" }, { action: commit, value: "L" }] } }
+      # 第三行：z 独立，xc / vb / nm 两两合并
+      z:  { tap: { label: "z", value: "z" }, swipe_up: "*", long_press: { display: "bubble", values: [{ action: commit, value: "z" }, { action: commit, value: "Z" }] } }
+      xc: { tap: { label: "xc", value: "x" }, swipe_up: "@", long_press: { display: "bubble", values: [{ action: commit, value: "x" }, { action: commit, value: "c" }, { action: commit, value: "X" }, { action: commit, value: "C" }] } }
+      vb: { tap: { label: "vb", value: "v" }, swipe_up: "?", long_press: { display: "bubble", values: [{ action: commit, value: "v" }, { action: commit, value: "b" }, { action: commit, value: "V" }, { action: commit, value: "B" }] } }
+      nm: { tap: { label: "nm", value: "n" }, swipe_up: "!", long_press: { display: "bubble", values: [{ action: commit, value: "n" }, { action: commit, value: "m" }, { action: commit, value: "N" }, { action: commit, value: "M" }] } }
+      # 功能键与字母键同宽：行 3 有 6 个键、行 1 有 5 个，同宽时视觉最接近全键盘。
+      shift:
+        width: 1
+        tap: { action: command, value: shift_single }
+        double_tap: { action: command, value: shift_caps }
+      delete:
+        width: 1
+        tap: { action: delete }
+        long_press: { values: [{ action: delete, label: 删除 }] }
+        swipe_up: { action: clear_all, label: 上滑清空 }
+        swipe_down: { action: undo_clear, label: 下滑撤回 }
+        swipe_left: { action: command, value: clear_composition }
+        swipe_right: { action: command, value: clear_composition }
+      mode_change:
+        width: 1.2
+        tap: { action: command, value: mode_change, bubble: false }
+        long_press:
+          display: bubble
+          values:
+            - { label: number, action: command, value: mode_change_number }
+            - { label: common_symbol, action: command, value: mode_change_common_symbol }
+      space:
+        width: 3
+        tap: { action: space }
+        long_press: { label: 语音, action: voice, bubble: false }
+      enter:
+        width: 1.2
+        tap: { action: enter, bubble: false }
+      # comma / earth 在其他段靠内置回退，此段无回退来源，须一并写全
+      comma:
+        tap: { label: "，", value: "," }
+        swipe_up: { label: "。", value: "." }
+        long_press: { display: "bubble", values: [{ action: commit, value: "," }, { action: commit, value: "." }] }
+      earth:
+        tap: { label: "@language", action: "toggle_ascii" }
+        long_press: { display: "bubble", values: [{ label: 选择输入法, action: "command", value: show_ime_picker }] }
 
   # ── 拼音 / 五笔 / 双拼 17 键：q we rt yu i op、a sd fg h jk l、z xc v bn m ──
   qwerty_17:
